@@ -1,3 +1,4 @@
+import Data.Maybe
 data Expr = Const Int
           | Expr :+: Expr
           | Expr :*: Expr
@@ -57,10 +58,59 @@ class Collection c where
   empty :: c key value
   singleton :: key -> value -> c key value
   insert :: Ord key => key -> value -> c key value -> c key value
-  lookup :: Ord key => key -> c key value -> Maybe value
+  lookup2 :: Ord key => Eq key => key -> c key value -> Maybe value
   delete :: Ord key => key -> c key value -> c key value
   keys :: c key value -> [key]
   values :: c key value -> [value]
   toList :: c key value -> [(key, value)]
+  toListBST :: c key value -> [(key,Maybe value)]
   fromList :: Ord key => [(key,value)] -> c key value
-  --keys col _ _ = [x | <- ]
+--2.1
+  keys c = [fst x | x <- toList c]
+  values c = [snd x | x <- toList c]
+  fromList [] = empty
+  fromList (x:xs) = insert (fst x) (snd x) (fromList xs)
+--2.2
+newtype PairList k v = PairList { getPairList :: [(k, v)] }
+instance Collection PairList where
+  empty = PairList []
+  singleton k v = PairList [(k,v)]
+  insert k v x = PairList ((getPairList x) ++ [(k,v)])
+  lookup2 k x
+    | length [snd y | y <- getPairList x, fst y == k] == 0 = Nothing
+    | otherwise = [Just (snd y) | y <- getPairList x, fst y == k]!!0
+  delete k x = PairList [y | y <- getPairList x, fst y /= k]
+  toList x = getPairList x
+  toListBST _ = undefined
+--2.3
+data SearchTree key value
+  = Empty
+  | BNode
+      (SearchTree key value) -- elemente cu cheia mai mica
+      key                   -- cheia elementului
+      (Maybe value)         -- valoarea elementului
+      (SearchTree key value) -- elemente cu cheia mai mare
+
+--ordonez dupa cheie(pt ca s-a pus constraintul Ord pe key, nu pe value in Collection) desi e mai logic dupa valoare, ca altfel dau de erori
+--la comparatia cu Maybe si ar trb sa adaug constrainturi in functia Collecion
+instance Collection SearchTree where
+  empty = Empty
+  singleton k v = BNode Empty k (Just v) Empty
+  insert k v (Empty) = singleton k v
+  insert k v (BNode stanga cheie val dreapta)
+    | k < cheie = insert k v stanga
+    | otherwise = insert k v dreapta
+  lookup2 _ (Empty) = Nothing
+  lookup2 k (BNode stanga cheie val dreapta)
+    | k == cheie = val
+    | k < cheie = lookup2 k stanga
+    | otherwise = lookup2 k dreapta
+  delete _ (Empty) = Empty
+  delete k (BNode stanga cheie val dreapta)
+    | k == cheie = (BNode stanga cheie Nothing dreapta)
+    | k < cheie = (BNode (delete k stanga) cheie val dreapta)
+    | otherwise = (BNode stanga cheie val (delete k dreapta))
+  toList = undefined
+  toListBST (BNode stanga cheie Nothing dreapta) = toListBST(stanga) ++ [(cheie, Nothing)] ++ toListBST(dreapta)
+  toListBST (BNode stanga cheie (Just val) dreapta) = toListBST(stanga) ++ [(cheie, Just val)] ++ toListBST(dreapta)
+  toListBST _ = []

@@ -8,7 +8,7 @@ nrPropRec (x:xs)
   | sfChar x = 1 + nrPropRec xs
   | otherwise = nrPropRec xs
 
---Ex1a)
+--Ex1b)
 nrPropSelect :: String -> Int
 nrPropSelect text = length [x | x<-text, sfChar x]
 
