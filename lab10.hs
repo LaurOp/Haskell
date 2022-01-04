@@ -92,7 +92,7 @@ data SearchTree key value
       (SearchTree key value) -- elemente cu cheia mai mare
 
 --ordonez dupa cheie(pt ca s-a pus constraintul Ord pe key, nu pe value in Collection) desi e mai logic dupa valoare, ca altfel dau de erori
---la comparatia cu Maybe si ar trb sa adaug constrainturi in functia Collecion
+--la comparatia cu Maybe si ar trb sa adaug constrainturi in clasa Collecion
 instance Collection SearchTree where
   empty = Empty
   singleton k v = BNode Empty k (Just v) Empty
